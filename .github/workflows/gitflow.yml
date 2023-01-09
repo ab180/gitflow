@@ -1,0 +1,330 @@
+name: gitflow
+
+on:
+  pull_request:
+    types:
+      - opened
+      - closed
+    branches:
+      - main
+      - develop
+
+env:
+  SOURCE_BRANCH: ${{ github.head_ref }}
+  DESTINATION_BRANCH: ${{ github.base_ref }}
+
+jobs:
+  check-branch:
+    runs-on: ubuntu-latest
+    outputs:
+      type: ${{ steps.feature.outputs.type || steps.release.outputs.type }}
+    steps:
+      - name: Check is feature pull request
+        id: feature
+        if: |
+          contains(env.SOURCE_BRANCH, 'feature/')
+          && env.DESTINATION_BRANCH == 'develop'
+        run: |
+          echo 'type=feature' >> $GITHUB_OUTPUT
+
+      - name: Check is release pull request
+        id: release
+        if: |
+          (contains(env.SOURCE_BRANCH, 'release/') || contains(env.SOURCE_BRANCH, 'hotfix/'))
+          && env.DESTINATION_BRANCH == 'main'
+        run: |
+          echo 'type=release' >> $GITHUB_OUTPUT
+
+      - name: Check is finish release pull request
+        id: finish-release
+        if: |
+          (contains(env.SOURCE_BRANCH, 'release/') || contains(env.SOURCE_BRANCH, 'hotfix/'))
+          && env.DESTINATION_BRANCH == 'develop'
+        run: |
+          echo 'type=finish-release' >> $GITHUB_OUTPUT
+        
+      - name: Print message when fail
+        if: |
+          !(steps.feature.outcome == 'success' || steps.release.outcome == 'success' || steps.finish-release.outcome == 'success')
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const message = `Invalid pull request: only (release/ or hotfix/ => main) or (feature/ => develop) is allowed`
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message,
+            })
+            github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              state: 'closed',
+            })
+            core.setFailed(message)
+
+  check-feature-branch:
+    runs-on: ubuntu-latest
+    needs:
+      - check-branch
+    if: |
+      needs.check-branch.result == 'success'
+      && needs.check-branch.outputs.type == 'feature'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Check is changelog.md contains '## Unreleased'
+        id: contains-unreleased
+        run: |
+          cat changelog.md | grep --perl-regexp '^## Unreleased$' \
+          || echo 'result=false' >> $GITHUB_OUTPUT
+
+      - name: Fail when previous is false
+        if: |
+          steps.contains-unreleased.outputs.result == 'false'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const message = `Invalid pull request: '## Unreleased' should be existed on changelog.md`
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message,
+            })
+            github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              state: 'closed',
+            })
+            core.setFailed(message)
+
+      - name: Checkout destination branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ env.DESTINATION_BRANCH }}
+
+      - name: Check is modify changelog.md
+        id: modified-changelog
+        run: |
+          git checkout ${{ github.sha }}
+          git diff --name-only ${{ env.DESTINATION_BRANCH }} \
+          | grep --perl-regexp 'changelog\.md' \
+          || echo 'result=false' >> $GITHUB_OUTPUT
+
+      - name: Recommend when previous is false
+        if: |
+          steps.modified-changelog.outputs.result == 'false'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `I recommend that you should modify changelog.md.`,
+            })
+
+  check-release-branch:
+    runs-on: ubuntu-latest
+    needs:
+      - check-branch
+    if: |
+      needs.check-branch.result == 'success'
+      && needs.check-branch.outputs.type == 'release'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Prepare version
+        id: version
+        run: |
+          VERSION=$(echo '${{ env.SOURCE_BRANCH }}' | grep --perl-regexp '\d\d*\.\d\d*\.\d\d*' --only-matching) \
+          && echo 'VERSION='$VERSION >> $GITHUB_ENV \
+          || echo 'result=false' >> $GITHUB_OUTPUT
+
+      - name: Fail when previous is false
+        if: |
+          steps.version.outputs.result == 'false'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const message = `Invalid pull request: source branch should satisfy 'type/0.0.0' format`
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message,
+            })
+            github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              state: 'closed',
+            })
+            core.setFailed(message)
+
+      - name: Check is changelog.md do not contains '## Unreleased'
+        id: not-contains-unreleased
+        run: |
+          cat changelog.md | grep --perl-regexp '^## Unreleased$' \
+          && echo 'result=false' >> $GITHUB_OUTPUT \
+          || :
+
+      - name: Fail when previous is false
+        if: |
+          steps.not-contains-unreleased.outputs.result == 'false'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const message = `Invalid pull request: '## Unreleased' should not be existed on changelog.md`
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message,
+            })
+            github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              state: 'closed',
+            })
+            core.setFailed(message)
+
+      - name: Check is changelog.md contains '## ${{ env.VERSION }}'
+        id: contains-version
+        run: |
+          cat changelog.md | grep --perl-regexp '^## ${{ env.VERSION }}$' \
+          || echo 'result=false' >> $GITHUB_OUTPUT
+
+      - name: Fail when previous is false
+        if: |
+          steps.contains-version.outputs.result == 'false'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const message = `Invalid pull request: '## ${{ env.VERSION }}' should be existed on changelog.md`
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message,
+            })
+            github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              state: 'closed',
+            })
+            core.setFailed(message)
+
+      - name: Check is changelog of version is not empty
+        id: changelog
+        run: |
+          CHANGELOG=$(
+            cat changelog.md \
+              | sed -n '/^## ${{ env.VERSION }}/,/^## /p' \
+              | sed '/^## /d'
+          ) \
+          && [ ! -z "$CHANGELOG" ] \
+          || echo 'result=false' >> $GITHUB_OUTPUT
+
+      - name: Fail when previous is false
+        if: |
+          steps.changelog.outputs.result == 'false'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const message = `Invalid pull request: changelog is empty`
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message,
+            })
+            github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              state: 'closed',
+            })
+            core.setFailed(message)
+
+  finish-feature-branch:
+    runs-on: ubuntu-latest
+    needs:
+      - check-branch
+      - check-feature-branch
+    if: |
+      github.event.pull_request.merged == true
+      && needs.check-branch.result == 'success'
+      && needs.check-branch.outputs.type == 'feature'
+      && needs.check-feature-branch.result == 'success'
+    steps:
+      - name: Remove feature branch
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.git.deleteRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'heads/${{ env.SOURCE_BRANCH }}',
+            })
+
+  finish-release-branch:
+    runs-on: ubuntu-latest
+    needs:
+      - check-branch
+      - check-release-branch
+    if: |
+      github.event.pull_request.merged == true
+      && needs.check-branch.result == 'success'
+      && needs.check-branch.outputs.type == 'release'
+      && needs.check-release-branch.result == 'success'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Prepare version
+        id: version
+        run: |
+          VERSION=$(echo '${{ env.SOURCE_BRANCH }}' | grep --perl-regexp '\d\d*\.\d\d*\.\d\d*' --only-matching) \
+          && echo 'VERSION='$VERSION >> $GITHUB_ENV
+
+      - name: Create release of version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          CHANGELOG=$(
+            cat changelog.md \
+              | sed -n '/^## ${{ env.VERSION }}/,/^## /p' \
+              | sed '/^## /d'
+          )
+          gh release create ${{ env.VERSION }} \
+            --generate-notes \
+            --notes '## Changelog'$'\n'"$CHANGELOG"$'\n''---'$'\n' \
+            --latest
+
+      - name: Create and merge pull request source branch to develop
+        id: pull-request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PULL_REQUEST_NUMBER=$(
+            gh pr create \
+              --head '${{ env.SOURCE_BRANCH }}' \
+              --base 'develop' \
+              --title 'release: ${{ env.VERSION }} to develop' \
+              --body 'release: ${{ env.VERSION }} to develop' \
+              | grep --perl-regexp '\/pull\/\d\d*' --only-matching \
+              | grep --perl-regexp '\d\d*' --only-matching
+          )
+          gh pr merge $PULL_REQUEST_NUMBER \
+            --subject 'release: ${{ env.VERSION }} to develop' \
+            --admin \
+            --delete-branch \
+            --merge
