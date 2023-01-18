@@ -99,6 +99,7 @@ changelog.md
 2. Github actions automatically check changelog.md has `## Unreleased`, if not close pull request.
 3. Github actions automatically check changelog.md has modification, if not add recommend comment to pull request.
 4. Merge.
+5. Github actions automatically delete `feature/name` branch
 
 ### When start new release or hotfix
 
@@ -168,4 +169,5 @@ changelog.md
 5. Github actions automatically create `0.0.0` tag and release.
 6. Github actions automatically append changelog.md's content of `## 0.0.0` to release note.
 7. Github actions automatically append result of github's generate release note feature to release note.
-8. Github actions automatically create and merge (`release/0.0.0` or `hotfix/0.0.0` to `develop`) pull request.
+8. Github actions automatically merge `release/0.0.0` or `hotfix/0.0.0` branch to `develop` branch.
+9. Github actions automatically delete `release/0.0.0` or `hotfix/0.0.0` branch.

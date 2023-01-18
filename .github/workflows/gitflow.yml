@@ -69,7 +69,8 @@ jobs:
     needs:
       - check-branch
     if: |
-      needs.check-branch.result == 'success'
+      github.event.pull_request.merged != true
+      && needs.check-branch.result == 'success'
       && needs.check-branch.outputs.type == 'feature'
     steps:
       - name: Checkout
@@ -133,7 +134,8 @@ jobs:
     needs:
       - check-branch
     if: |
-      needs.check-branch.result == 'success'
+      github.event.pull_request.merged != true
+      && needs.check-branch.result == 'success'
       && needs.check-branch.outputs.type == 'release'
     steps:
       - name: Checkout
@@ -258,14 +260,12 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - check-branch
-      - check-feature-branch
     if: |
       github.event.pull_request.merged == true
       && needs.check-branch.result == 'success'
       && needs.check-branch.outputs.type == 'feature'
-      && needs.check-feature-branch.result == 'success'
     steps:
-      - name: Remove feature branch
+      - name: Remove source branch
         uses: actions/github-script@v6
         with:
           script: |
@@ -279,12 +279,10 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - check-branch
-      - check-release-branch
     if: |
       github.event.pull_request.merged == true
       && needs.check-branch.result == 'success'
       && needs.check-branch.outputs.type == 'release'
-      && needs.check-release-branch.result == 'success'
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -309,22 +307,24 @@ jobs:
             --notes '## Changelog'$'\n'"$CHANGELOG"$'\n''---'$'\n' \
             --latest
 
-      - name: Create and merge pull request source branch to develop
-        id: pull-request
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          PULL_REQUEST_NUMBER=$(
-            gh pr create \
-              --head '${{ env.SOURCE_BRANCH }}' \
-              --base 'develop' \
-              --title 'release: ${{ env.VERSION }} to develop' \
-              --body 'release: ${{ env.VERSION }} to develop' \
-              | grep --perl-regexp '\/pull\/\d\d*' --only-matching \
-              | grep --perl-regexp '\d\d*' --only-matching
-          )
-          gh pr merge $PULL_REQUEST_NUMBER \
-            --subject 'release: ${{ env.VERSION }} to develop' \
-            --admin \
-            --delete-branch \
-            --merge
+      - name: Merge source branch to develop branch
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.repos.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              base: 'develop',
+              head: '${{ env.SOURCE_BRANCH }}',
+              commit_message: 'release: ${{ env.VERSION }} to develop',
+            })
+      
+      - name: Remove source branch
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.git.deleteRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'heads/${{ env.SOURCE_BRANCH }}',
+            })

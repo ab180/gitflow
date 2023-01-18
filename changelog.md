@@ -1,3 +1,9 @@
+## 1.1.0
+
+- fix: solve issue that release/ or hotfix/ branch can not be merged to develop branch when branch protection rules are applied on develop branch
+- feature: when (feature/ => develop) pull request is merged, github actions remove feature/ branch
+- feature: when (release/ or hotfix/ => main) pull request is merged, github actions remove release/ or hotfix/ branch
+
 ## 1.0.0
 
 - feature: when pull reqeust, github actions check pull request is (release/ or hotfix/ => main) or (feature/ => develop), if not github actions close the pull request
