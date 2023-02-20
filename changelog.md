@@ -1,3 +1,7 @@
+## 1.1.2
+
+- fix: solve issue that workflow do not work every modification of pull request
+
 ## 1.1.1
 
 - change: replace (release/ or hotfix/ => develop) merge with pull request

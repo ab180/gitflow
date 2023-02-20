@@ -4,6 +4,8 @@ on:
   pull_request:
     types:
       - opened
+      - synchronize
+      - reopend
       - closed
     branches:
       - main
@@ -308,7 +310,7 @@ jobs:
             --latest
 
       - name: Create pull request source branch to develop
-        id: pull-request
+        id: create-pull-request
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -324,7 +326,7 @@ jobs:
           echo 'PULL_REQUEST_NUMBER='$PULL_REQUEST_NUMBER >> $GITHUB_ENV
 
       - name: Merge pull request source branch to develop
-        id: pull-request
+        id: merge-pull-request
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
