@@ -1,3 +1,7 @@
+## 1.1.1
+
+- change: replace (release/ or hotfix/ => develop) merge with pull request
+
 ## 1.1.0
 
 - fix: solve issue that release/ or hotfix/ branch can not be merged to develop branch when branch protection rules are applied on develop branch

@@ -307,24 +307,30 @@ jobs:
             --notes '## Changelog'$'\n'"$CHANGELOG"$'\n''---'$'\n' \
             --latest
 
-      - name: Merge source branch to develop branch
-        uses: actions/github-script@v6
-        with:
-          script: |
-            github.rest.repos.merge({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              base: 'develop',
-              head: '${{ env.SOURCE_BRANCH }}',
-              commit_message: 'release: ${{ env.VERSION }} to develop',
-            })
-      
-      - name: Remove source branch
-        uses: actions/github-script@v6
-        with:
-          script: |
-            github.rest.git.deleteRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: 'heads/${{ env.SOURCE_BRANCH }}',
-            })
+      - name: Create pull request source branch to develop
+        id: pull-request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PULL_REQUEST_NUMBER=$(
+            gh pr create \
+              --head '${{ env.SOURCE_BRANCH }}' \
+              --base 'develop' \
+              --title 'release: ${{ env.VERSION }} to develop' \
+              --body 'release: ${{ env.VERSION }} to develop' \
+              | grep --perl-regexp '\/pull\/\d\d*' --only-matching \
+              | grep --perl-regexp '\d\d*' --only-matching
+          )
+          echo 'PULL_REQUEST_NUMBER='$PULL_REQUEST_NUMBER >> $GITHUB_ENV
+
+      - name: Merge pull request source branch to develop
+        id: pull-request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr merge ${{ env.PULL_REQUEST_NUMBER }} \
+            --subject 'release: ${{ env.VERSION }} to develop' \
+            --admin \
+            --delete-branch \
+            --merge \
+            || exit 0
