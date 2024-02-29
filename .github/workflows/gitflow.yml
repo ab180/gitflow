@@ -80,6 +80,12 @@ jobs:
               repo: context.repo.repo,
               body: message,
             })
+            github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              state: 'closed',
+            })
             core.setFailed(message)
           github-token: ${{ env.GITHUB_TOKEN }}
 
@@ -96,7 +102,7 @@ jobs:
           cat changelog.md \
             | grep '^## Unreleased$' \
             || (echo 'failure=changelog-not-contains-unreleased' >> $GITHUB_OUTPUT; exit 1)
-          git diff --name-only origin/${{ env.DESTINATION_BRANCH }} \
+          git diff --name-only ${{ env.DESTINATION_BRANCH }} \
             | grep --perl-regexp 'changelog\.md' \
             || (echo 'warning=changelog-not-modified' >> $GITHUB_OUTPUT; exit 0)
 
@@ -115,6 +121,12 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: message,
+            })
+            github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              state: 'closed',
             })
             core.setFailed(message)
           github-token: ${{ env.GITHUB_TOKEN }}
@@ -193,6 +205,12 @@ jobs:
               repo: context.repo.repo,
               body: message,
             })
+            github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              state: 'closed',
+            })
             core.setFailed(message)
           github-token: ${{ env.GITHUB_TOKEN }}
 
@@ -243,13 +261,8 @@ jobs:
             --notes '## Changelog'$'\n'"$CHANGELOG"$'\n''---'$'\n' \
             --latest
           (
-            git branch --delete '${{ env.SOURCE_BRANCH }}' || :
-            git checkout -b '${{ env.SOURCE_BRANCH }}' 'origin/${{ env.SOURCE_BRANCH }}'
-              || (
-                git checkout -b '${{ env.SOURCE_BRANCH }}' '${{ env.SOURCE_COMMIT }}'
-                git push -u origin '${{ env.SOURCE_BRANCH }}'
-              )
-            git branch --delete '${{ env.SOURCE_BRANCH }}' || :
+            git checkout -b '${{ env.SOURCE_BRANCH }}' '${{ env.SOURCE_COMMIT }}'
+            git push '${{ env.SOURCE_BRANCH }}'
           )
           PULL_REQUEST_NUMBER=$(
             gh pr create \
