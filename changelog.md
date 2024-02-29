@@ -1,3 +1,9 @@
+## 2.0.0
+
+- change: make gitflow as reusable workflow
+- change: do not close pull request if branch do not satisfy condition
+- change: make gitflow works with one job
+
 ## 1.1.2
 
 - fix: solve issue that workflow do not work every modification of pull request

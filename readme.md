@@ -1,4 +1,4 @@
-# gitflow-template
+# gitflow
 
 A implementation of workflows of github actions to support using gitflow on github with branch protection rules and managing changelog.md.
 
@@ -7,10 +7,28 @@ A implementation of workflows of github actions to support using gitflow on gith
 1. Create main, develop branch to repository.
 2. Add branch protection rules of main, develop branch.
 3. Add `.github/workflows/gitflow.yml` to repository.
+    ```yml
+    name: gitflow
+
+    on:
+    pull_request:
+      types:
+        - opened
+        - synchronize
+        - reopened
+        - closed
+        branches:
+        - main
+        - develop
+
+    jobs:
+      gitflow:
+        uses: ab180/gitflow/.github/workflows/gitflow.yml@v2
+    ```
 4. Set `Workflow permissions` as checking `Read and write permissions` and `Allow GitHub Actions to create and approve pull requests`.
 5. Do not check `Automatically delete head branches`.
-6. Add `check-feature-branch` to `Require status checks to pass before merging` of develop branch.
-7. Add `check-release-branch` to `Require status checks to pass before merging` of main branch.
+6. Add `gitflow` to `Require status checks to pass before merging` of develop branch.
+7. Add `gitflow` to `Require status checks to pass before merging` of main branch.
 
 ## usage
 
