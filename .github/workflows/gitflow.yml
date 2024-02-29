@@ -12,11 +12,12 @@ on:
       - develop
   workflow_call:
     secrets:
-      GITHUB_TOKEN:
+      TOKEN:
+        description: 'GitHub token (Default: GitHub Action token)'
         required: false
 
 env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN || github.token }}
+  GITHUB_TOKEN: ${{ secrets.TOKEN || github.token }}
   SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
   SOURCE_COMMIT: ${{ github.event.pull_request.head.sha }}
   DESTINATION_BRANCH: ${{ github.event.pull_request.base.ref }}
