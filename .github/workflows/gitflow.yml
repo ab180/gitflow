@@ -125,7 +125,7 @@ jobs:
         with:
           script: |
             const message = (() => {
-              if ('${{ steps.check-feature-branch.outputs.failure }}' === 'changelog-not-modified') {
+              if ('${{ steps.check-feature-branch.outputs.warning }}' === 'changelog-not-modified') {
                 return `I recommend that you should modify changelog.md.`
               }
             })()
