@@ -170,7 +170,7 @@ jobs:
             echo '${{ env.SOURCE_BRANCH }}' \
               | grep '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*' --only-matching
           ) \
-          && echo "version=$VERSION" >> $GITHUB_OUTPUT
+          && (echo "version=$VERSION" >> $GITHUB_OUTPUT) \
           || (echo 'failure=version-not-found' >> $GITHUB_OUTPUT; exit 1)
           cat changelog.md \
             | grep '^## Unreleased$' \
@@ -268,10 +268,10 @@ jobs:
           )
           gh release create $VERSION \
             --generate-notes \
-            --notes '## Changelog'$'\n'"$CHANGELOG"$'\n''---'$'\n' \
+            --notes '## Changelog'$'\n'"$CHANGELOG"$'\n' \
             --latest
-          git checkout -b '${{ env.SOURCE_BRANCH }}' '${{ env.SOURCE_COMMIT }}'
-            && git push -u origin '${{ env.SOURCE_BRANCH }}'
+          git checkout -b '${{ env.SOURCE_BRANCH }}' '${{ env.SOURCE_COMMIT }}' \
+            && git push -u origin '${{ env.SOURCE_BRANCH }}' \
             || :
           PULL_REQUEST_NUMBER=$(
             gh pr create \
@@ -284,13 +284,7 @@ jobs:
           )
           gh pr merge $PULL_REQUEST_NUMBER \
             --subject "release: $VERSION to develop" \
-            --delete-branch \
+            --admin \
             --merge \
-            || (
-              gh pr merge $PULL_REQUEST_NUMBER \
-              --subject "release: $VERSION to develop" \
-              --admin \
-              --delete-branch \
-              --merge
-            )
-            || exit 0
+            && git push origin --delete ${{ env.SOURCE_BRANCH }} \
+            || :
