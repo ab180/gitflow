@@ -106,7 +106,7 @@ jobs:
         with:
           script: |
             const message = (() => {
-              if (${{ steps.check-feature-branch.outputs.failure }} == 'changelog-not-contains-unreleased') {
+              if ('${{ steps.check-feature-branch.outputs.failure }}' === 'changelog-not-contains-unreleased') {
                 return `Invalid pull request: '## Unreleased' should be existed on changelog.md`
               }
             })()
@@ -125,7 +125,7 @@ jobs:
         with:
           script: |
             const message = (() => {
-              if (${{ steps.check-feature-branch.outputs.failure }} == 'changelog-not-modified') {
+              if ('${{ steps.check-feature-branch.outputs.failure }}' === 'changelog-not-modified') {
                 return `I recommend that you should modify changelog.md.`
               }
             })()
@@ -173,17 +173,17 @@ jobs:
         with:
           script: |
             const message = (() => {
-              if (${{ steps.check-release-branch.outputs.failure }} == 'version-not-found') {
+              if ('${{ steps.check-release-branch.outputs.failure }}' === 'version-not-found') {
                 return `Invalid pull request: source branch should satisfy 'type/0.0.0' format`
               }
-              else if (${{ steps.check-release-branch.outputs.failure }} == 'changelog-contains-unreleased') {
+              else if ('${{ steps.check-release-branch.outputs.failure }}' === 'changelog-contains-unreleased') {
                 return `Invalid pull request: '## Unreleased' should not be existed on changelog.md`
               }
-              else if (${{ steps.check-release-branch.outputs.failure }} == 'changelog-not-contains-version') {
+              else if ('${{ steps.check-release-branch.outputs.failure }}' === 'changelog-not-contains-version') {
                 const version = '${{ steps.check-release-branch.outputs.version }}'
                 return `Invalid pull request: '## ${version}' should be existed on changelog.md`
               }
-              else if (${{ steps.check-release-branch.outputs.failure }} == 'changelog-is-empty') {
+              else if ('${{ steps.check-release-branch.outputs.failure }}' === 'changelog-is-empty') {
                 return `Invalid pull request: changelog is empty`
               }
             })()
