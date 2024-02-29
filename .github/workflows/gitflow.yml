@@ -205,7 +205,7 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const { data: references } = await github.rest.git.listMatchingRef({
+            const { data: references } = await github.rest.git.listMatchingRefs({
               owner: context.repo.owner,
               repo: context.repo.repo,
               ref: 'heads/${{ env.SOURCE_BRANCH }}',
