@@ -92,6 +92,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Checkout commit
+        run: |
+          git fetch origin ${{ env.SOURCE_COMMIT }} || :
+          git fetch origin ${{ env.DESTINATION_COMMIT }} || :
+
       - name: Check feature branch
         id: check-feature-branch
         if: |
