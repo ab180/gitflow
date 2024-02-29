@@ -90,7 +90,7 @@ jobs:
           github-token: ${{ env.GITHUB_TOKEN }}
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Check feature branch
         id: check-feature-branch
@@ -102,7 +102,7 @@ jobs:
           cat changelog.md \
             | grep '^## Unreleased$' \
             || (echo 'failure=changelog-not-contains-unreleased' >> $GITHUB_OUTPUT; exit 1)
-          git diff --name-only ${{ env.DESTINATION_BRANCH }} \
+          git diff --name-only ${{ env.DESTINATION_COMMIT }} \
             | grep --perl-regexp 'changelog\.md' \
             || (echo 'warning=changelog-not-modified' >> $GITHUB_OUTPUT; exit 0)
 
@@ -260,10 +260,9 @@ jobs:
             --generate-notes \
             --notes '## Changelog'$'\n'"$CHANGELOG"$'\n''---'$'\n' \
             --latest
-          (
-            git checkout -b '${{ env.SOURCE_BRANCH }}' '${{ env.SOURCE_COMMIT }}'
-            git push '${{ env.SOURCE_BRANCH }}'
-          )
+          git checkout -b '${{ env.SOURCE_BRANCH }}' '${{ env.SOURCE_COMMIT }}'
+            && git push -u origin '${{ env.SOURCE_BRANCH }}'
+            || :
           PULL_REQUEST_NUMBER=$(
             gh pr create \
               --head '${{ env.SOURCE_BRANCH }}' \
