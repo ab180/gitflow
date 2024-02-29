@@ -36,6 +36,7 @@ jobs:
               || startsWith(env.SOURCE_BRANCH, 'refactor/')
               || startsWith(env.SOURCE_BRANCH, 'fix/')
               || startsWith(env.SOURCE_BRANCH, 'change/')
+              || startsWith(env.SOURCE_BRANCH, 'update/')
               || startsWith(env.SOURCE_BRANCH, 'document/')
               || startsWith(env.SOURCE_BRANCH, 'test/')
             )
@@ -51,15 +52,15 @@ jobs:
           }} == true ]]; then
             echo 'type=release' >> $GITHUB_OUTPUT
           elif [[ ${{
-            startsWith(env.SOURCE_BRANCH, 'norelease/')
+            startsWith(env.SOURCE_BRANCH, 'unrelease/')
             && env.DESTINATION_BRANCH == 'main'
           }} == true ]]; then
-            echo 'type=norelease' >> $GITHUB_OUTPUT
+            echo 'type=unrelease' >> $GITHUB_OUTPUT
           elif [[ ${{
             (
               startsWith(env.SOURCE_BRANCH, 'release/')
               || startsWith(env.SOURCE_BRANCH, 'hotfix/')
-              || startsWith(env.SOURCE_BRANCH, 'norelease/')
+              || startsWith(env.SOURCE_BRANCH, 'unrelease/')
             )
             && env.DESTINATION_BRANCH == 'develop'
           }} == true ]]; then
@@ -76,8 +77,8 @@ jobs:
             const message = [
               'Invalid pull request: ',
               'only (release/ or hotfix/ => main) ',
-              'or (norelease/ => main) ',
-              'or (feature/ or refactor/ or fix/ or change/ or document/ or test/ => develop) is allowed',
+              'or (unrelease/ => main) ',
+              'or (feature/ or refactor/ or fix/ or change/ or update/ or document/ or test/ => develop) is allowed',
             ].join('')
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -95,6 +96,8 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          token: ${{ env.GITHUB_TOKEN }}
 
       - name: Checkout commit
         run: |
@@ -227,23 +230,9 @@ jobs:
           github.event.pull_request.merged == true
           && steps.check-branch.outcome == 'success'
           && steps.check-branch.outputs.type == 'feature'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const { data: references } = await github.rest.git.listMatchingRefs({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: 'heads/${{ env.SOURCE_BRANCH }}',
-            })
-            if (references.length == 0) {
-              return
-            }
-            github.rest.git.deleteRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: 'heads/${{ env.SOURCE_BRANCH }}',
-            })
-          github-token: ${{ env.GITHUB_TOKEN }}
+        run: |
+          git push origin --delete ${{ env.SOURCE_BRANCH }} \
+          || :
 
       - name: Finish release branch
         id: finish-release-branch
@@ -274,13 +263,39 @@ jobs:
             gh pr create \
               --head '${{ env.SOURCE_BRANCH }}' \
               --base 'develop' \
-              --title "release: $VERSION to develop" \
-              --body "release: $VERSION to develop" \
+              --title "update: ${{ env.SOURCE_BRANCH }} to develop" \
+              --body "update: ${{ env.SOURCE_BRANCH }} to develop" \
               | grep '\/pull\/[0-9][0-9]*' --only-matching \
               | grep '[0-9][0-9]*' --only-matching
           )
           gh pr merge $PULL_REQUEST_NUMBER \
-            --subject "release: $VERSION to develop" \
+            --subject "update: ${{ env.SOURCE_BRANCH }} to develop" \
+            --admin \
+            --merge \
+            && git push origin --delete ${{ env.SOURCE_BRANCH }} \
+            || :
+
+      - name: Finish unrelease branch
+        id: finish-unrelease-branch
+        if: |
+          github.event.pull_request.merged == true
+          && steps.check-branch.outcome == 'success'
+          && steps.check-branch.outputs.type == 'unrelease'
+        run: |
+          git checkout -b '${{ env.SOURCE_BRANCH }}' '${{ env.SOURCE_COMMIT }}' \
+            && git push -u origin '${{ env.SOURCE_BRANCH }}' \
+            || :
+          PULL_REQUEST_NUMBER=$(
+            gh pr create \
+              --head '${{ env.SOURCE_BRANCH }}' \
+              --base 'develop' \
+              --title "update: ${{ env.SOURCE_BRANCH }} to develop" \
+              --body "update: ${{ env.SOURCE_BRANCH }} to develop" \
+              | grep '\/pull\/[0-9][0-9]*' --only-matching \
+              | grep '[0-9][0-9]*' --only-matching
+          )
+          gh pr merge $PULL_REQUEST_NUMBER \
+            --subject "update: ${{ env.SOURCE_BRANCH }} to develop" \
             --admin \
             --merge \
             && git push origin --delete ${{ env.SOURCE_BRANCH }} \

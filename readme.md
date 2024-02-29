@@ -6,7 +6,7 @@ A implementation of workflows of GitHub Actions to support using gitflow on GitH
 
 1. Create main, develop branch to repository.
 2. Add branch protection rules of main, develop branch.
-3. Add `.GitHub/workflows/gitflow.yml` to repository.
+3. Add `.github/workflows/gitflow.yml` to repository.
     ```yml
     name: gitflow
 
@@ -23,7 +23,7 @@ A implementation of workflows of GitHub Actions to support using gitflow on GitH
 
     jobs:
       gitflow:
-        uses: ab180/gitflow/.GitHub/workflows/gitflow.yml@v2
+        uses: ab180/gitflow/.github/workflows/gitflow.yml@v2
     ```
 4. Set `Workflow permissions` as checking `Read and write permissions` and `Allow GitHub Actions to create and approve pull requests`.
 5. Do not check `Automatically delete head branches`.
@@ -83,11 +83,13 @@ changelog.md
 ```
 
 1. Create branch from develop branch.
-2. Make branch name as `feature/name`.
+2. Make branch name as `${type}/name`.
 3. Modify code.
 4. Add `## Unreleased` to top of changelog.md when do not contains it.
 5. Add description of feature to bottom of `## Unreleased` of changelog.md.
 6. Commit and push.
+
+> `type` is `feature` or `refactor` or `fix` or `change` or `update` or `document` or `test`.
 
 ### When finish feature
 
@@ -113,11 +115,13 @@ changelog.md
 ...
 ```
 
-1. Create (`feature/name` to `develop`) pull request.
+1. Create (`${type}/name` to `develop`) pull request.
 2. GitHub Actions automatically check changelog.md has `## Unreleased`, if not close pull request.
 3. GitHub Actions automatically check changelog.md has modification, if not add recommend comment to pull request.
 4. Merge.
-5. GitHub Actions automatically delete `feature/name` branch
+5. GitHub Actions automatically delete `${type}/name` branch.
+
+> `type` is `feature` or `refactor` or `fix` or `change` or `update` or `document` or `test`.
 
 ### When start new release or hotfix
 
@@ -189,3 +193,26 @@ changelog.md
 7. GitHub Actions automatically append result of GitHub's generate release note feature to release note.
 8. GitHub Actions automatically merge `release/0.0.0` or `hotfix/0.0.0` branch to `develop` branch.
 9. GitHub Actions automatically delete `release/0.0.0` or `hotfix/0.0.0` branch.
+
+### When finish unrelease
+
+```mermaid
+%%{ init: { 'gitGraph': { 'showCommitLabel': false,'mainBranchName': 'main' } } }%%
+    gitGraph
+        checkout main
+        commit tag: "1.0.0"
+        branch develop
+        commit
+        branch unrelease/1.1.0
+        commit
+        commit
+        checkout main
+        merge unrelease/1.1.0 tag: "1.1.0"
+        checkout develop
+        merge unrelease/1.1.0
+```
+
+1. Create (`unrelease/0.0.0` to `main`) pull request.
+2. Merge.
+3. GitHub Actions automatically merge `unrelease/0.0.0` branch to `develop` branch.
+4. GitHub Actions automatically delete `unrelease/0.0.0` branch.
