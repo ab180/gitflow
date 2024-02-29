@@ -46,11 +46,15 @@ jobs:
             (
               contains(env.SOURCE_BRANCH, 'release/')
               || contains(env.SOURCE_BRANCH, 'hotfix/')
-              || contains(env.SOURCE_BRANCH, 'norelease/')
             )
             && env.DESTINATION_BRANCH == 'main'
           }} == true ]]; then
             echo 'type=release' >> $GITHUB_OUTPUT
+          elif [[ ${{
+            contains(env.SOURCE_BRANCH, 'norelease/')
+            && env.DESTINATION_BRANCH == 'main'
+          }} == true ]]; then
+            echo 'type=norelease' >> $GITHUB_OUTPUT
           elif [[ ${{
             (
               contains(env.SOURCE_BRANCH, 'release/')
@@ -59,7 +63,7 @@ jobs:
             )
             && env.DESTINATION_BRANCH == 'develop'
           }} == true ]]; then
-            echo 'type=finish-release' >> $GITHUB_OUTPUT
+            echo 'type=update' >> $GITHUB_OUTPUT
           else
             exit 1
           fi
@@ -72,6 +76,7 @@ jobs:
             const message = [
               'Invalid pull request: ',
               'only (release/ or hotfix/ => main) ',
+              'or (norelease/ => main) ',
               'or (feature/ or refactor/ or fix/ or change/ or document/ or test/ => develop) is allowed',
             ].join('')
             github.rest.issues.createComment({
