@@ -32,34 +32,34 @@ jobs:
         run: |
           if [[ ${{
             (
-              contains(env.SOURCE_BRANCH, 'feature/')
-              || contains(env.SOURCE_BRANCH, 'refactor/')
-              || contains(env.SOURCE_BRANCH, 'fix/')
-              || contains(env.SOURCE_BRANCH, 'change/')
-              || contains(env.SOURCE_BRANCH, 'document/')
-              || contains(env.SOURCE_BRANCH, 'test/')
+              startsWith(env.SOURCE_BRANCH, 'feature/')
+              || startsWith(env.SOURCE_BRANCH, 'refactor/')
+              || startsWith(env.SOURCE_BRANCH, 'fix/')
+              || startsWith(env.SOURCE_BRANCH, 'change/')
+              || startsWith(env.SOURCE_BRANCH, 'document/')
+              || startsWith(env.SOURCE_BRANCH, 'test/')
             )
             && env.DESTINATION_BRANCH == 'develop'
           }} == true ]]; then
             echo 'type=feature' >> $GITHUB_OUTPUT
           elif [[ ${{
             (
-              contains(env.SOURCE_BRANCH, 'release/')
-              || contains(env.SOURCE_BRANCH, 'hotfix/')
+              startsWith(env.SOURCE_BRANCH, 'release/')
+              || startsWith(env.SOURCE_BRANCH, 'hotfix/')
             )
             && env.DESTINATION_BRANCH == 'main'
           }} == true ]]; then
             echo 'type=release' >> $GITHUB_OUTPUT
           elif [[ ${{
-            contains(env.SOURCE_BRANCH, 'norelease/')
+            startsWith(env.SOURCE_BRANCH, 'norelease/')
             && env.DESTINATION_BRANCH == 'main'
           }} == true ]]; then
             echo 'type=norelease' >> $GITHUB_OUTPUT
           elif [[ ${{
             (
-              contains(env.SOURCE_BRANCH, 'release/')
-              || contains(env.SOURCE_BRANCH, 'hotfix/')
-              || contains(env.SOURCE_BRANCH, 'norelease/')
+              startsWith(env.SOURCE_BRANCH, 'release/')
+              || startsWith(env.SOURCE_BRANCH, 'hotfix/')
+              || startsWith(env.SOURCE_BRANCH, 'norelease/')
             )
             && env.DESTINATION_BRANCH == 'develop'
           }} == true ]]; then
@@ -91,7 +91,6 @@ jobs:
               pull_number: context.issue.number,
               state: 'closed',
             })
-            core.setFailed(message)
           github-token: ${{ env.GITHUB_TOKEN }}
 
       - name: Checkout
@@ -138,7 +137,6 @@ jobs:
               pull_number: context.issue.number,
               state: 'closed',
             })
-            core.setFailed(message)
           github-token: ${{ env.GITHUB_TOKEN }}
 
       - name: If warn on check feature branch
@@ -221,7 +219,6 @@ jobs:
               pull_number: context.issue.number,
               state: 'closed',
             })
-            core.setFailed(message)
           github-token: ${{ env.GITHUB_TOKEN }}
 
       - name: Finish feature branch
