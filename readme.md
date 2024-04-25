@@ -24,6 +24,17 @@ A implementation of workflows of GitHub Actions to support using gitflow on GitH
     jobs:
       gitflow:
         uses: ab180/gitflow/.github/workflows/gitflow.yml@v2
+        # inputs:
+        #   MAIN_BRANCH: ... # Default: 'main'
+        #   DEVELOP_BRANCH: ... # Default: 'develop'
+        #   FEATURE_BRANCHES: ... # Default: 'feature refactor fix change update document test chore'
+        #   RELEASE_BRANCHES: ... # Default: 'release hotfix'
+        #   NORELEASE_BRANCHES: ... # Default: 'norelease'
+        #   VERSION_EXPRESSION: ... # Default: '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*'
+        #   VERSION_HEADER: ... # Default: '## '
+        #   CHANGELOG: ... # Default: 'changelog.md'
+        # secrets:
+        #   TOKEN: ... # Default: Github Action token
     ```
 4. Set `Workflow permissions` as checking `Read and write permissions` and `Allow GitHub Actions to create and approve pull requests`.
 5. Do not check `Automatically delete head branches`.
@@ -83,13 +94,11 @@ changelog.md
 ```
 
 1. Create branch from develop branch.
-2. Make branch name as `${type}/name`.
+2. Make branch name as `${FEATURE_TYPE}/name`.
 3. Modify code.
 4. Add `## Unreleased` to top of changelog.md when do not contains it.
 5. Add description of feature to bottom of `## Unreleased` of changelog.md.
 6. Commit and push.
-
-> `type` is `feature` or `refactor` or `fix` or `change` or `update` or `document` or `test`.
 
 ### When finish feature
 
@@ -115,13 +124,11 @@ changelog.md
 ...
 ```
 
-1. Create (`${type}/name` to `develop`) pull request.
+1. Create (`${FEATURE_TYPE}/name` to `develop`) pull request.
 2. GitHub Actions automatically check changelog.md has `## Unreleased`, if not close pull request.
 3. GitHub Actions automatically check changelog.md has modification, if not add recommend comment to pull request.
 4. Merge.
-5. GitHub Actions automatically delete `${type}/name` branch.
-
-> `type` is `feature` or `refactor` or `fix` or `change` or `update` or `document` or `test`.
+5. GitHub Actions automatically delete `${FEATURE_TYPE}/name` branch.
 
 ### When start new release or hotfix
 
@@ -145,7 +152,7 @@ changelog.md
 ```
 
 1. Create branch from develop branch.
-2. Make branch name as `release/0.0.0` or `hotfix/0.0.0`.
+2. Make branch name as `${RELEASE_TYPE}/0.0.0`.
 3. Modify code to change version.
 4. Modify `## Unreleased` to `## 0.0.0` of changelog.md.
 
@@ -194,7 +201,7 @@ changelog.md
 8. GitHub Actions automatically merge `release/0.0.0` or `hotfix/0.0.0` branch to `develop` branch.
 9. GitHub Actions automatically delete `release/0.0.0` or `hotfix/0.0.0` branch.
 
-### When finish unrelease
+### When finish norelease
 
 ```mermaid
 %%{ init: { 'gitGraph': { 'showCommitLabel': false,'mainBranchName': 'main' } } }%%
@@ -203,16 +210,16 @@ changelog.md
         commit tag: "1.0.0"
         branch develop
         commit
-        branch unrelease/1.1.0
+        branch norelease/1.1.0
         commit
         commit
         checkout main
-        merge unrelease/1.1.0 tag: "1.1.0"
+        merge norelease/1.1.0 tag: "1.1.0"
         checkout develop
-        merge unrelease/1.1.0
+        merge norelease/1.1.0
 ```
 
-1. Create (`unrelease/0.0.0` to `main`) pull request.
+1. Create (`{NORELEASE_TYPE}/0.0.0` to `main`) pull request.
 2. Merge.
-3. GitHub Actions automatically merge `unrelease/0.0.0` branch to `develop` branch.
-4. GitHub Actions automatically delete `unrelease/0.0.0` branch.
+3. GitHub Actions automatically merge `{NORELEASE_TYPE}/0.0.0` branch to `develop` branch.
+4. GitHub Actions automatically delete `{NORELEASE_TYPE}/0.0.0` branch.

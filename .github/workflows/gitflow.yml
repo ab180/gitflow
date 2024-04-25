@@ -11,6 +11,47 @@ on:
       - main
       - develop
   workflow_call:
+    inputs:
+      MAIN_BRANCH:
+        description: 'Name of main branch'
+        type: string
+        default: 'main'
+        required: false
+      DEVELOP_BRANCH:
+        description: 'Name of develop branch'
+        type: string
+        default: 'develop'
+        required: false
+      FEATURE_BRANCHES:
+        description: 'Names of feature branch (seperator is " ")'
+        type: string
+        default: 'feature refactor fix change update document test chore'
+        required: false
+      RELEASE_BRANCHES:
+        description: 'Names of release branch (seperator is " ")'
+        type: string
+        default: 'release hotfix'
+        required: false
+      NORELEASE_BRANCHES:
+        description: 'Names of norelease branch (seperator is " ")'
+        type: string
+        default: 'norelease'
+        required: false
+      VERSION_EXPRESSION:
+        description: 'Regular expression of version on changelog'
+        type: string
+        default: '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*'
+        required: false
+      VERSION_HEADER:
+        description: 'Header of version on changelog'
+        type: string
+        default: '## '
+        required: false
+      CHANGELOG:
+        description: 'Name of changelog file'
+        type: string
+        default: 'changelog.md'
+        required: false
     secrets:
       TOKEN:
         description: 'GitHub token (Default: GitHub Action token)'
@@ -30,40 +71,54 @@ jobs:
       - name: Check branch
         id: check-branch
         run: |
-          if [[ ${{
-            (
-              startsWith(env.SOURCE_BRANCH, 'feature/')
-              || startsWith(env.SOURCE_BRANCH, 'refactor/')
-              || startsWith(env.SOURCE_BRANCH, 'fix/')
-              || startsWith(env.SOURCE_BRANCH, 'change/')
-              || startsWith(env.SOURCE_BRANCH, 'update/')
-              || startsWith(env.SOURCE_BRANCH, 'document/')
-              || startsWith(env.SOURCE_BRANCH, 'test/')
-            )
-            && env.DESTINATION_BRANCH == 'develop'
-          }} == true ]]; then
+          if [[ $(
+            if [[ '${{env.DESTINATION_BRANCH}}' != '${{ inputs.DEVELOP_BRANCH }}' ]]; then
+              echo 'false'
+            fi
+            for FEATURE_BRANCH in $(echo '${{ inputs.FEATURE_BRANCHES }}'); do
+              if [[ '${{ env.SOURCE_BRANCH }}' =~ ^"$FEATURE_BRANCH"/.*$ ]]; then
+                echo 'true'
+              fi
+            done
+          ) == true ]]; then
             echo 'type=feature' >> $GITHUB_OUTPUT
-          elif [[ ${{
-            (
-              startsWith(env.SOURCE_BRANCH, 'release/')
-              || startsWith(env.SOURCE_BRANCH, 'hotfix/')
-            )
-            && env.DESTINATION_BRANCH == 'main'
-          }} == true ]]; then
+          elif [[ $(
+            if [[ '${{env.DESTINATION_BRANCH}}' != '${{ inputs.MAIN_BRANCH }}' ]]; then
+              echo 'false'
+            fi
+            for RELEASE_BRANCH in $(echo '${{ inputs.RELEASE_BRANCHES }}'); do
+              if [[ '${{ env.SOURCE_BRANCH }}' =~ ^"$RELEASE_BRANCH"/.*$ ]]; then
+                echo 'true'
+              fi
+            done
+          ) == true ]]; then
             echo 'type=release' >> $GITHUB_OUTPUT
-          elif [[ ${{
-            startsWith(env.SOURCE_BRANCH, 'unrelease/')
-            && env.DESTINATION_BRANCH == 'main'
-          }} == true ]]; then
-            echo 'type=unrelease' >> $GITHUB_OUTPUT
-          elif [[ ${{
-            (
-              startsWith(env.SOURCE_BRANCH, 'release/')
-              || startsWith(env.SOURCE_BRANCH, 'hotfix/')
-              || startsWith(env.SOURCE_BRANCH, 'unrelease/')
-            )
-            && env.DESTINATION_BRANCH == 'develop'
-          }} == true ]]; then
+          elif [[ $(
+            if [[ '${{env.DESTINATION_BRANCH}}' != '${{ inputs.MAIN_BRANCH }}' ]]; then
+              echo 'false'
+            fi
+            for NORELEASE_BRANCH in $(echo '${{ inputs.NORELEASE_BRANCHES }}'); do
+              if [[ '${{ env.SOURCE_BRANCH }}' =~ ^"$NORELEASE_BRANCH"/.*$ ]]; then
+                echo 'true'
+              fi
+            done
+          ) == true ]]; then
+            echo 'type=norelease' >> $GITHUB_OUTPUT
+          elif [[ $(
+            if [[ '${{env.DESTINATION_BRANCH}}' != '${{ inputs.DEVELOP_BRANCH }}' ]]; then
+              echo 'false'
+            fi
+            for RELEASE_BRANCH in $(echo '${{ inputs.RELEASE_BRANCHES }}'); do
+              if [[ '${{ env.SOURCE_BRANCH }}' =~ ^"$RELEASE_BRANCH"/.*$ ]]; then
+                echo 'true'
+              fi
+            done
+            for NORELEASE_BRANCH in $(echo '${{ inputs.NORELEASE_BRANCHES }}'); do
+              if [[ '${{ env.SOURCE_BRANCH }}' =~ ^"$NORELEASE_BRANCH"/.*$ ]]; then
+                echo 'true'
+              fi
+            done
+          ) == true ]]; then
             echo 'type=update' >> $GITHUB_OUTPUT
           else
             exit 1
@@ -76,9 +131,9 @@ jobs:
           script: |
             const message = [
               'Invalid pull request: ',
-              'only (release/ or hotfix/ => main) ',
-              'or (unrelease/ => main) ',
-              'or (feature/ or refactor/ or fix/ or change/ or update/ or document/ or test/ => develop) is allowed',
+              'only ({RELEASE_TYPE}/ => ${{ inputs.MAIN_BRANCH }}) ',
+              'or ({NORELEASE_TYPE}/ => ${{ inputs.MAIN_BRANCH }}) ',
+              'or ({FEATURE_TYPE}/ => ${{ inputs.DEVELOP_BRANCH }}) is allowed',
             ].join('')
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -111,8 +166,8 @@ jobs:
           && steps.check-branch.outcome == 'success'
           && steps.check-branch.outputs.type == 'feature'
         run: |
-          cat changelog.md \
-            | grep '^## Unreleased$' \
+          cat ${{ inputs.CHANGELOG }} \
+            | grep '^${{ inputs.VERSION_HEADER }}Unreleased$' \
             || (echo 'failure=changelog-not-contains-unreleased' >> $GITHUB_OUTPUT; exit 1)
           git diff --name-only ${{ env.DESTINATION_COMMIT }} \
             | grep --perl-regexp 'changelog\.md' \
@@ -125,7 +180,11 @@ jobs:
           script: |
             const message = (() => {
               if ('${{ steps.check-feature-branch.outputs.failure }}' === 'changelog-not-contains-unreleased') {
-                return `Invalid pull request: '## Unreleased' should be existed on changelog.md`
+                return [
+                  `Invalid pull request: `,
+                  `'${{ inputs.VERSION_HEADER }}Unreleased' `,
+                  `should be existed on ${{ inputs.CHANGELOG }}.`,
+                ].join('')
               }
             })()
             github.rest.issues.createComment({
@@ -149,7 +208,7 @@ jobs:
           script: |
             const message = (() => {
               if ('${{ steps.check-feature-branch.outputs.warning }}' === 'changelog-not-modified') {
-                return `I recommend that you should modify changelog.md.`
+                return `I recommend that you should modify ${{ inputs.CHANGELOG }}.`
               }
             })()
             github.rest.issues.createComment({
@@ -169,21 +228,21 @@ jobs:
         run: |
           VERSION=$(
             echo '${{ env.SOURCE_BRANCH }}' \
-              | grep '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*' --only-matching
+              | grep '${{ inputs.VERSION_EXPRESSION }}' --only-matching
           ) \
           && (echo "version=$VERSION" >> $GITHUB_OUTPUT) \
           || (echo 'failure=version-not-found' >> $GITHUB_OUTPUT; exit 1)
-          cat changelog.md \
-            | grep '^## Unreleased$' \
+          cat ${{ inputs.CHANGELOG }} \
+            | grep '^${{ inputs.VERSION_HEADER }}Unreleased$' \
             && (echo 'failure=changelog-contains-unreleased' >> $GITHUB_OUTPUT; exit 1) \
             || :
-          cat changelog.md \
-            | grep "^## $VERSION$" \
+          cat ${{ inputs.CHANGELOG }} \
+            | grep "^${{ inputs.VERSION_HEADER }}$VERSION$" \
             || (echo 'failure=changelog-not-contains-version' >> $GITHUB_OUTPUT; exit 1)
           CHANGELOG=$(
-            cat changelog.md \
-              | perl -0pe "s/(.*\n)*## $VERSION\n//g" \
-              | perl -0pe 's/(\n?)## .*\n(.*\n)*/\1/g' \
+            cat ${{ inputs.CHANGELOG }} \
+              | perl -0pe "s/(.*\n)*${{ inputs.VERSION_HEADER }}$VERSION\n//g" \
+              | perl -0pe 's/(\n?)${{ inputs.VERSION_HEADER }}.*\n(.*\n)*/\1/g' \
               | perl -0pe 's/^\n*//g' \
               | perl -0pe 's/\n*$//g'
           ) \
@@ -197,17 +256,25 @@ jobs:
           script: |
             const message = (() => {
               if ('${{ steps.check-release-branch.outputs.failure }}' === 'version-not-found') {
-                return `Invalid pull request: source branch should satisfy 'type/0.0.0' format`
+                return `Invalid pull request: source branch should satisfy '{RELEASE_TYPE}/0.0.0' format.`
               }
               else if ('${{ steps.check-release-branch.outputs.failure }}' === 'changelog-contains-unreleased') {
-                return `Invalid pull request: '## Unreleased' should not be existed on changelog.md`
+                return [
+                  `Invalid pull request: `,
+                  `'${{ inputs.VERSION_HEADER }}Unreleased' `,
+                  `should not be existed on ${{ inputs.CHANGELOG }}.`,
+                ].join('')
               }
               else if ('${{ steps.check-release-branch.outputs.failure }}' === 'changelog-not-contains-version') {
                 const version = '${{ steps.check-release-branch.outputs.version }}'
-                return `Invalid pull request: '## ${version}' should be existed on changelog.md`
+                return [
+                  `Invalid pull request: `,
+                  `'${{ inputs.VERSION_HEADER }}${version}' `,
+                  `should not be existed on ${{ inputs.CHANGELOG }}.`,
+                ].join('')
               }
               else if ('${{ steps.check-release-branch.outputs.failure }}' === 'changelog-is-empty') {
-                return `Invalid pull request: changelog is empty`
+                return `Invalid pull request: changelog is empty.`
               }
             })()
             github.rest.issues.createComment({
@@ -243,12 +310,12 @@ jobs:
         run: |
           VERSION=$(
             echo '${{ env.SOURCE_BRANCH }}' \
-              | grep '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*' --only-matching
+              | grep '${{ inputs.VERSION_EXPRESSION }}' --only-matching
           )
           CHANGELOG=$(
-            cat changelog.md \
-              | perl -0pe "s/(.*\n)*## $VERSION\n//g" \
-              | perl -0pe 's/(\n?)## .*\n(.*\n)*/\1/g' \
+            cat ${{ inputs.CHANGELOG }} \
+              | perl -0pe "s/(.*\n)*${{ inputs.VERSION_HEADER }}$VERSION\n//g" \
+              | perl -0pe 's/(\n?)${{ inputs.VERSION_HEADER }}.*\n(.*\n)*/\1/g' \
               | perl -0pe 's/^\n*//g' \
               | perl -0pe 's/\n*$//g'
           )
@@ -275,12 +342,12 @@ jobs:
             && git push origin --delete ${{ env.SOURCE_BRANCH }} \
             || :
 
-      - name: Finish unrelease branch
-        id: finish-unrelease-branch
+      - name: Finish norelease branch
+        id: finish-norelease-branch
         if: |
           github.event.pull_request.merged == true
           && steps.check-branch.outcome == 'success'
-          && steps.check-branch.outputs.type == 'unrelease'
+          && steps.check-branch.outputs.type == 'norelease'
         run: |
           git checkout -b '${{ env.SOURCE_BRANCH }}' '${{ env.SOURCE_COMMIT }}' \
             && git push -u origin '${{ env.SOURCE_BRANCH }}' \
