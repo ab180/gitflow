@@ -58,6 +58,14 @@ on:
         required: false
 
 env:
+  MAIN_BRANCH: ${{ inputs.MAIN_BRANCH || 'main' }}
+  DEVELOP_BRANCH: ${{ inputs.DEVELOP_BRANCH || 'develop' }}
+  FEATURE_BRANCHES: ${{ inputs.FEATURE_BRANCHES || 'feature refactor fix change update document test chore' }}
+  RELEASE_BRANCHES: ${{ inputs.RELEASE_BRANCHES || 'release hotfix' }}
+  NORELEASE_BRANCHES: ${{ inputs.NORELEASE_BRANCHES || 'norelease' }}
+  VERSION_EXPRESSION: ${{ inputs.VERSION_EXPRESSION || '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*' }}
+  VERSION_HEADER: ${{ inputs.VERSION_HEADER || '## ' }}
+  CHANGELOG: ${{ inputs.CHANGELOG || 'changelog.md' }}
   GITHUB_TOKEN: ${{ secrets.TOKEN || github.token }}
   SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
   SOURCE_COMMIT: ${{ github.event.pull_request.head.sha }}
@@ -72,10 +80,10 @@ jobs:
         id: check-branch
         run: |
           if [[ $(
-            if [[ '${{env.DESTINATION_BRANCH}}' != '${{ inputs.DEVELOP_BRANCH }}' ]]; then
+            if [[ '${{ env.DESTINATION_BRANCH }}' != '${{ env.DEVELOP_BRANCH }}' ]]; then
               echo 'false'
             fi
-            for FEATURE_BRANCH in $(echo '${{ inputs.FEATURE_BRANCHES }}'); do
+            for FEATURE_BRANCH in $(echo '${{ env.FEATURE_BRANCHES }}'); do
               if [[ '${{ env.SOURCE_BRANCH }}' =~ ^"$FEATURE_BRANCH"/.*$ ]]; then
                 echo 'true'
               fi
@@ -83,10 +91,10 @@ jobs:
           ) == true ]]; then
             echo 'type=feature' >> $GITHUB_OUTPUT
           elif [[ $(
-            if [[ '${{env.DESTINATION_BRANCH}}' != '${{ inputs.MAIN_BRANCH }}' ]]; then
+            if [[ '${{ env.DESTINATION_BRANCH }}' != '${{ env.MAIN_BRANCH }}' ]]; then
               echo 'false'
             fi
-            for RELEASE_BRANCH in $(echo '${{ inputs.RELEASE_BRANCHES }}'); do
+            for RELEASE_BRANCH in $(echo '${{ env.RELEASE_BRANCHES }}'); do
               if [[ '${{ env.SOURCE_BRANCH }}' =~ ^"$RELEASE_BRANCH"/.*$ ]]; then
                 echo 'true'
               fi
@@ -94,10 +102,10 @@ jobs:
           ) == true ]]; then
             echo 'type=release' >> $GITHUB_OUTPUT
           elif [[ $(
-            if [[ '${{env.DESTINATION_BRANCH}}' != '${{ inputs.MAIN_BRANCH }}' ]]; then
+            if [[ '${{ env.DESTINATION_BRANCH }}' != '${{ env.MAIN_BRANCH }}' ]]; then
               echo 'false'
             fi
-            for NORELEASE_BRANCH in $(echo '${{ inputs.NORELEASE_BRANCHES }}'); do
+            for NORELEASE_BRANCH in $(echo '${{ env.NORELEASE_BRANCHES }}'); do
               if [[ '${{ env.SOURCE_BRANCH }}' =~ ^"$NORELEASE_BRANCH"/.*$ ]]; then
                 echo 'true'
               fi
@@ -105,15 +113,15 @@ jobs:
           ) == true ]]; then
             echo 'type=norelease' >> $GITHUB_OUTPUT
           elif [[ $(
-            if [[ '${{env.DESTINATION_BRANCH}}' != '${{ inputs.DEVELOP_BRANCH }}' ]]; then
+            if [[ '${{ env.DESTINATION_BRANCH }}' != '${{ env.DEVELOP_BRANCH }}' ]]; then
               echo 'false'
             fi
-            for RELEASE_BRANCH in $(echo '${{ inputs.RELEASE_BRANCHES }}'); do
+            for RELEASE_BRANCH in $(echo '${{ env.RELEASE_BRANCHES }}'); do
               if [[ '${{ env.SOURCE_BRANCH }}' =~ ^"$RELEASE_BRANCH"/.*$ ]]; then
                 echo 'true'
               fi
             done
-            for NORELEASE_BRANCH in $(echo '${{ inputs.NORELEASE_BRANCHES }}'); do
+            for NORELEASE_BRANCH in $(echo '${{ env.NORELEASE_BRANCHES }}'); do
               if [[ '${{ env.SOURCE_BRANCH }}' =~ ^"$NORELEASE_BRANCH"/.*$ ]]; then
                 echo 'true'
               fi
@@ -131,9 +139,9 @@ jobs:
           script: |
             const message = [
               'Invalid pull request: ',
-              'only ({RELEASE_TYPE}/ => ${{ inputs.MAIN_BRANCH }}) ',
-              'or ({NORELEASE_TYPE}/ => ${{ inputs.MAIN_BRANCH }}) ',
-              'or ({FEATURE_TYPE}/ => ${{ inputs.DEVELOP_BRANCH }}) is allowed',
+              'only ({RELEASE_TYPE}/ => ${{ env.MAIN_BRANCH }}) ',
+              'or ({NORELEASE_TYPE}/ => ${{ env.MAIN_BRANCH }}) ',
+              'or ({FEATURE_TYPE}/ => ${{ env.DEVELOP_BRANCH }}) is allowed',
             ].join('')
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -166,8 +174,8 @@ jobs:
           && steps.check-branch.outcome == 'success'
           && steps.check-branch.outputs.type == 'feature'
         run: |
-          cat ${{ inputs.CHANGELOG }} \
-            | grep '^${{ inputs.VERSION_HEADER }}Unreleased$' \
+          cat ${{ env.CHANGELOG }} \
+            | grep '^${{ env.VERSION_HEADER }}Unreleased$' \
             || (echo 'failure=changelog-not-contains-unreleased' >> $GITHUB_OUTPUT; exit 1)
           git diff --name-only ${{ env.DESTINATION_COMMIT }} \
             | grep --perl-regexp 'changelog\.md' \
@@ -182,8 +190,8 @@ jobs:
               if ('${{ steps.check-feature-branch.outputs.failure }}' === 'changelog-not-contains-unreleased') {
                 return [
                   `Invalid pull request: `,
-                  `'${{ inputs.VERSION_HEADER }}Unreleased' `,
-                  `should be existed on ${{ inputs.CHANGELOG }}.`,
+                  `'${{ env.VERSION_HEADER }}Unreleased' `,
+                  `should be existed on ${{ env.CHANGELOG }}.`,
                 ].join('')
               }
             })()
@@ -208,7 +216,7 @@ jobs:
           script: |
             const message = (() => {
               if ('${{ steps.check-feature-branch.outputs.warning }}' === 'changelog-not-modified') {
-                return `I recommend that you should modify ${{ inputs.CHANGELOG }}.`
+                return `I recommend that you should modify ${{ env.CHANGELOG }}.`
               }
             })()
             github.rest.issues.createComment({
@@ -228,21 +236,21 @@ jobs:
         run: |
           VERSION=$(
             echo '${{ env.SOURCE_BRANCH }}' \
-              | grep '${{ inputs.VERSION_EXPRESSION }}' --only-matching
+              | grep '${{ env.VERSION_EXPRESSION }}' --only-matching
           ) \
           && (echo "version=$VERSION" >> $GITHUB_OUTPUT) \
           || (echo 'failure=version-not-found' >> $GITHUB_OUTPUT; exit 1)
-          cat ${{ inputs.CHANGELOG }} \
-            | grep '^${{ inputs.VERSION_HEADER }}Unreleased$' \
+          cat ${{ env.CHANGELOG }} \
+            | grep '^${{ env.VERSION_HEADER }}Unreleased$' \
             && (echo 'failure=changelog-contains-unreleased' >> $GITHUB_OUTPUT; exit 1) \
             || :
-          cat ${{ inputs.CHANGELOG }} \
-            | grep "^${{ inputs.VERSION_HEADER }}$VERSION$" \
+          cat ${{ env.CHANGELOG }} \
+            | grep "^${{ env.VERSION_HEADER }}$VERSION$" \
             || (echo 'failure=changelog-not-contains-version' >> $GITHUB_OUTPUT; exit 1)
           CHANGELOG=$(
-            cat ${{ inputs.CHANGELOG }} \
-              | perl -0pe "s/(.*\n)*${{ inputs.VERSION_HEADER }}$VERSION\n//g" \
-              | perl -0pe 's/(\n?)${{ inputs.VERSION_HEADER }}.*\n(.*\n)*/\1/g' \
+            cat ${{ env.CHANGELOG }} \
+              | perl -0pe "s/(.*\n)*${{ env.VERSION_HEADER }}$VERSION\n//g" \
+              | perl -0pe 's/(\n?)${{ env.VERSION_HEADER }}.*\n(.*\n)*/\1/g' \
               | perl -0pe 's/^\n*//g' \
               | perl -0pe 's/\n*$//g'
           ) \
@@ -261,16 +269,16 @@ jobs:
               else if ('${{ steps.check-release-branch.outputs.failure }}' === 'changelog-contains-unreleased') {
                 return [
                   `Invalid pull request: `,
-                  `'${{ inputs.VERSION_HEADER }}Unreleased' `,
-                  `should not be existed on ${{ inputs.CHANGELOG }}.`,
+                  `'${{ env.VERSION_HEADER }}Unreleased' `,
+                  `should not be existed on ${{ env.CHANGELOG }}.`,
                 ].join('')
               }
               else if ('${{ steps.check-release-branch.outputs.failure }}' === 'changelog-not-contains-version') {
                 const version = '${{ steps.check-release-branch.outputs.version }}'
                 return [
                   `Invalid pull request: `,
-                  `'${{ inputs.VERSION_HEADER }}${version}' `,
-                  `should not be existed on ${{ inputs.CHANGELOG }}.`,
+                  `'${{ env.VERSION_HEADER }}${version}' `,
+                  `should not be existed on ${{ env.CHANGELOG }}.`,
                 ].join('')
               }
               else if ('${{ steps.check-release-branch.outputs.failure }}' === 'changelog-is-empty') {
@@ -310,12 +318,12 @@ jobs:
         run: |
           VERSION=$(
             echo '${{ env.SOURCE_BRANCH }}' \
-              | grep '${{ inputs.VERSION_EXPRESSION }}' --only-matching
+              | grep '${{ env.VERSION_EXPRESSION }}' --only-matching
           )
           CHANGELOG=$(
-            cat ${{ inputs.CHANGELOG }} \
-              | perl -0pe "s/(.*\n)*${{ inputs.VERSION_HEADER }}$VERSION\n//g" \
-              | perl -0pe 's/(\n?)${{ inputs.VERSION_HEADER }}.*\n(.*\n)*/\1/g' \
+            cat ${{ env.CHANGELOG }} \
+              | perl -0pe "s/(.*\n)*${{ env.VERSION_HEADER }}$VERSION\n//g" \
+              | perl -0pe 's/(\n?)${{ env.VERSION_HEADER }}.*\n(.*\n)*/\1/g' \
               | perl -0pe 's/^\n*//g' \
               | perl -0pe 's/\n*$//g'
           )
