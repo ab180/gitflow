@@ -1,3 +1,7 @@
+## 2.1.0
+
+- feature: add customizable feature.
+
 ## 2.0.0
 
 - change: make gitflow as reusable workflow
