@@ -17,7 +17,7 @@ A implementation of workflows of GitHub Actions to support using gitflow on GitH
         - synchronize
         - reopened
         - closed
-        branches:
+      branches:
         - main
         - develop
 
