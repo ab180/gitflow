@@ -11,15 +11,15 @@ A implementation of workflows of GitHub Actions to support using gitflow on GitH
     name: gitflow
 
     on:
-    pull_request:
-      types:
-        - opened
-        - synchronize
-        - reopened
-        - closed
-      branches:
-        - main
-        - develop
+      pull_request:
+        types:
+          - opened
+          - synchronize
+          - reopened
+          - closed
+        branches:
+          - main
+          - develop
 
     jobs:
       gitflow:
