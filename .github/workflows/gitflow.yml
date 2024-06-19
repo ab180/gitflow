@@ -349,6 +349,8 @@ jobs:
             --merge \
             && git push origin --delete ${{ env.SOURCE_BRANCH }} \
             || :
+        env:
+          GH_TOKEN: ${{ env.GITHUB_TOKEN }}
 
       - name: Finish norelease branch
         id: finish-norelease-branch
@@ -375,3 +377,5 @@ jobs:
             --merge \
             && git push origin --delete ${{ env.SOURCE_BRANCH }} \
             || :
+        env:
+          GH_TOKEN: ${{ env.GITHUB_TOKEN }}
