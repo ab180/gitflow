@@ -1,3 +1,7 @@
+## 2.1.1
+
+- fix: solve issue that github token is not applied to github command line tool
+
 ## 2.1.0
 
 - feature: add customizable feature.
