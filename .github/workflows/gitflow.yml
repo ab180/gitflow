@@ -219,6 +219,15 @@ jobs:
                 return `I recommend that you should modify ${{ env.CHANGELOG }}.`
               }
             })()
+            const response = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            const comments = response.map(json => json.body)
+            if (comments.some(comment => comment === message)) {
+              return
+            }
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
@@ -330,6 +339,7 @@ jobs:
           gh release create $VERSION \
             --generate-notes \
             --notes '## Changelog'$'\n'"$CHANGELOG"$'\n' \
+            --target '${{ env.MAIN_BRANCH }}' \
             --latest
           git checkout -b '${{ env.SOURCE_BRANCH }}' '${{ env.SOURCE_COMMIT }}' \
             && git push -u origin '${{ env.SOURCE_BRANCH }}' \
@@ -337,14 +347,15 @@ jobs:
           PULL_REQUEST_NUMBER=$(
             gh pr create \
               --head '${{ env.SOURCE_BRANCH }}' \
-              --base 'develop' \
-              --title "update: ${{ env.SOURCE_BRANCH }} to develop" \
-              --body "update: ${{ env.SOURCE_BRANCH }} to develop" \
+              --base '${{ env.DEVELOP_BRANCH }}' \
+              --title "update: ${{ env.SOURCE_BRANCH }} to ${{ env.DEVELOP_BRANCH }}" \
+              --body "update: ${{ env.SOURCE_BRANCH }} to ${{ env.DEVELOP_BRANCH }}" \
               | grep '\/pull\/[0-9][0-9]*' --only-matching \
-              | grep '[0-9][0-9]*' --only-matching
+              | grep '[0-9][0-9]*' --only-matching \
+              || :
           )
           gh pr merge $PULL_REQUEST_NUMBER \
-            --subject "update: ${{ env.SOURCE_BRANCH }} to develop" \
+            --subject "update: ${{ env.SOURCE_BRANCH }} to ${{ env.DEVELOP_BRANCH }}" \
             --admin \
             --merge \
             && git push origin --delete ${{ env.SOURCE_BRANCH }} \
@@ -365,14 +376,15 @@ jobs:
           PULL_REQUEST_NUMBER=$(
             gh pr create \
               --head '${{ env.SOURCE_BRANCH }}' \
-              --base 'develop' \
-              --title "update: ${{ env.SOURCE_BRANCH }} to develop" \
-              --body "update: ${{ env.SOURCE_BRANCH }} to develop" \
+              --base '${{ env.DEVELOP_BRANCH }}' \
+              --title "update: ${{ env.SOURCE_BRANCH }} to ${{ env.DEVELOP_BRANCH }}" \
+              --body "update: ${{ env.SOURCE_BRANCH }} to ${{ env.DEVELOP_BRANCH }}" \
               | grep '\/pull\/[0-9][0-9]*' --only-matching \
-              | grep '[0-9][0-9]*' --only-matching
+              | grep '[0-9][0-9]*' --only-matching \
+              || :
           )
           gh pr merge $PULL_REQUEST_NUMBER \
-            --subject "update: ${{ env.SOURCE_BRANCH }} to develop" \
+            --subject "update: ${{ env.SOURCE_BRANCH }} to ${{ env.DEVELOP_BRANCH }}" \
             --admin \
             --merge \
             && git push origin --delete ${{ env.SOURCE_BRANCH }} \
