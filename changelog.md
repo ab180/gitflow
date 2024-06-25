@@ -1,3 +1,7 @@
+## 2.2.1
+
+- fix: use TOKEN instead of GITHUB_TOKEN
+
 ## 2.2.0
 
 - feature: support fetching github token from github app
