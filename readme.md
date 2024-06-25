@@ -24,7 +24,7 @@ A implementation of workflows of GitHub Actions to support using gitflow on GitH
     jobs:
       gitflow:
         uses: ab180/gitflow/.github/workflows/gitflow.yml@v2
-        # inputs:
+        # with:
         #   MAIN_BRANCH: ... # Default: 'main'
         #   DEVELOP_BRANCH: ... # Default: 'develop'
         #   FEATURE_BRANCHES: ... # Default: 'feature refactor fix change update document test chore'
