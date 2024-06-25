@@ -53,8 +53,17 @@ on:
         default: 'changelog.md'
         required: false
     secrets:
-      TOKEN:
+      GITHUB_TOKEN:
         description: 'GitHub token (Default: GitHub Action token)'
+        required: false
+      GITHUB_APP_ID:
+        description: 'GitHub app id for fetching GitHub token'
+        required: false
+      GITHUB_APP_PRIVATE_KEY:
+        description: 'GitHub app private key for fetching GitHub token'
+        required: false
+      GITHUB_APP_OWNER:
+        description: 'GitHub app owner for fetching GitHub token'
         required: false
 
 env:
@@ -66,7 +75,10 @@ env:
   VERSION_EXPRESSION: ${{ inputs.VERSION_EXPRESSION || '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*' }}
   VERSION_HEADER: ${{ inputs.VERSION_HEADER || '## ' }}
   CHANGELOG: ${{ inputs.CHANGELOG || 'changelog.md' }}
-  GITHUB_TOKEN: ${{ secrets.TOKEN || github.token }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN || github.token }}
+  GITHUB_APP_ID: ${{ secrets.GITHUB_APP_ID }}
+  GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+  GITHUB_APP_OWNER: ${{ secrets.GITHUB_APP_OWNER }}
   SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
   SOURCE_COMMIT: ${{ github.event.pull_request.head.sha }}
   DESTINATION_BRANCH: ${{ github.event.pull_request.base.ref }}
@@ -76,6 +88,21 @@ jobs:
   gitflow:
     runs-on: ubuntu-latest
     steps:
+      - name: Fetching GitHub Token
+        id: fetching-github-token
+        if: ${{ env.GITHUB_APP_ID && env.GITHUB_APP_PRIVATE_KEY && env.GITHUB_APP_OWNER }}
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ env.GITHUB_APP_ID }}
+          private-key: ${{ env.GITHUB_APP_PRIVATE_KEY }}
+          owner: ${{ env.GITHUB_APP_OWNER }}
+
+      - name: Using GitHub Token
+        if: ${{ env.GITHUB_APP_ID && env.GITHUB_APP_PRIVATE_KEY && env.GITHUB_APP_OWNER }}
+        run: |
+          echo '::add-mask::${{ steps.fetching-github-token.outputs.token }}'
+          echo 'GITHUB_TOKEN=${{ steps.fetching-github-token.outputs.token }}' >> $GITHUB_ENV
+
       - name: Check branch
         id: check-branch
         run: |

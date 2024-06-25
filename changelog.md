@@ -1,3 +1,7 @@
+## 2.2.0
+
+- feature: support fetching github token from github app
+
 ## 2.1.2
 
 - fix: solve issue that DEVELOP_BRANCH input is not used

@@ -34,7 +34,10 @@ A implementation of workflows of GitHub Actions to support using gitflow on GitH
         #   VERSION_HEADER: ... # Default: '## '
         #   CHANGELOG: ... # Default: 'changelog.md'
         # secrets:
-        #   TOKEN: ... # Default: Github Action token
+        #   GITHUB_TOKEN: ... # Default: GitHub Action token
+        #   GITHUB_APP_ID: ... # Default: GitHub App ID for fetching GitHub token
+        #   GITHUB_APP_PRIVATE_KEY: ... # Default: GitHub App ID for fetching GitHub token
+        #   GITHUB_APP_OWNER: ... # Default: GitHub App ID for fetching GitHub token
     ```
 4. Set `Workflow permissions` as checking `Read and write permissions` and `Allow GitHub Actions to create and approve pull requests`.
 5. Do not check `Automatically delete head branches`.
