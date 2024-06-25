@@ -53,7 +53,7 @@ on:
         default: 'changelog.md'
         required: false
     secrets:
-      GITHUB_TOKEN:
+      TOKEN:
         description: 'GitHub token (Default: GitHub Action token)'
         required: false
       GITHUB_APP_ID:
@@ -75,7 +75,7 @@ env:
   VERSION_EXPRESSION: ${{ inputs.VERSION_EXPRESSION || '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*' }}
   VERSION_HEADER: ${{ inputs.VERSION_HEADER || '## ' }}
   CHANGELOG: ${{ inputs.CHANGELOG || 'changelog.md' }}
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN || github.token }}
+  TOKEN: ${{ secrets.TOKEN || github.token }}
   GITHUB_APP_ID: ${{ secrets.GITHUB_APP_ID }}
   GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
   GITHUB_APP_OWNER: ${{ secrets.GITHUB_APP_OWNER }}
@@ -101,7 +101,7 @@ jobs:
         if: ${{ env.GITHUB_APP_ID && env.GITHUB_APP_PRIVATE_KEY && env.GITHUB_APP_OWNER }}
         run: |
           echo '::add-mask::${{ steps.fetching-github-token.outputs.token }}'
-          echo 'GITHUB_TOKEN=${{ steps.fetching-github-token.outputs.token }}' >> $GITHUB_ENV
+          echo 'TOKEN=${{ steps.fetching-github-token.outputs.token }}' >> $GITHUB_ENV
 
       - name: Check branch
         id: check-branch
@@ -182,12 +182,12 @@ jobs:
               pull_number: context.issue.number,
               state: 'closed',
             })
-          github-token: ${{ env.GITHUB_TOKEN }}
+          github-token: ${{ env.TOKEN }}
 
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          token: ${{ env.GITHUB_TOKEN }}
+          token: ${{ env.TOKEN }}
 
       - name: Checkout commit
         run: |
@@ -234,7 +234,7 @@ jobs:
               pull_number: context.issue.number,
               state: 'closed',
             })
-          github-token: ${{ env.GITHUB_TOKEN }}
+          github-token: ${{ env.TOKEN }}
 
       - name: If warn on check feature branch
         if: always() && steps.check-feature-branch.outputs.warning != null
@@ -261,7 +261,7 @@ jobs:
               repo: context.repo.repo,
               body: message,
             })
-          github-token: ${{ env.GITHUB_TOKEN }}
+          github-token: ${{ env.TOKEN }}
 
       - name: Check release branch
         id: check-release-branch
@@ -333,7 +333,7 @@ jobs:
               pull_number: context.issue.number,
               state: 'closed',
             })
-          github-token: ${{ env.GITHUB_TOKEN }}
+          github-token: ${{ env.TOKEN }}
 
       - name: Finish feature branch
         id: finish-feature-branch
@@ -388,7 +388,7 @@ jobs:
             && git push origin --delete ${{ env.SOURCE_BRANCH }} \
             || :
         env:
-          GH_TOKEN: ${{ env.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ env.TOKEN }}
 
       - name: Finish norelease branch
         id: finish-norelease-branch
@@ -417,4 +417,4 @@ jobs:
             && git push origin --delete ${{ env.SOURCE_BRANCH }} \
             || :
         env:
-          GH_TOKEN: ${{ env.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ env.TOKEN }}
