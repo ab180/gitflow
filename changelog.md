@@ -1,3 +1,7 @@
+## Unreleased
+
+- document: add Unreleased to changelog.md
+
 ## 2.2.1
 
 - fix: use TOKEN instead of GITHUB_TOKEN
