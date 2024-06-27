@@ -1,4 +1,4 @@
-## Unreleased
+## 2.2.2
 
 - document: add Unreleased to changelog.md
 

@@ -128,7 +128,7 @@ changelog.md
 ```
 
 1. Create (`${FEATURE_TYPE}/name` to `develop`) pull request.
-2. GitHub Actions automatically check changelog.md has `## Unreleased`, if not close pull request.
+2. GitHub Actions automatically check changelog.md has `## Unreleased`, if possible add `## Unreleased` to changelog.md and commit and push, if not close pull request.
 3. GitHub Actions automatically check changelog.md has modification, if not add recommend comment to pull request.
 4. Merge.
 5. GitHub Actions automatically delete `${FEATURE_TYPE}/name` branch.
