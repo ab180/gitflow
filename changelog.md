@@ -1,6 +1,10 @@
+## 2.2.3
+
+- fix: solve issue that CHANGELOG input is not used on everywhere
+
 ## 2.2.2
 
-- document: add Unreleased to changelog.md
+- feature: add Unreleased to changelog if necessary
 
 ## 2.2.1
 
