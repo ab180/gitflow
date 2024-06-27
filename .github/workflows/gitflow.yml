@@ -203,6 +203,14 @@ jobs:
         run: |
           cat ${{ env.CHANGELOG }} \
             | grep '^${{ env.VERSION_HEADER }}Unreleased$' \
+            || ( \
+              echo "$(echo '${{ env.VERSION_HEADER }}Unreleased\n' | cat - ${{ env.CHANGELOG }})" > ${{ env.CHANGELOG }}; \
+              git config user.name github-actions; \
+              git config user.email github-actions@github.com; \
+              git add ${{ env.CHANGELOG }}; \
+              git commit -m "document: add Unreleased to ${{ env.CHANGELOG }}"; \
+              git push; \
+            ) \
             || (echo 'failure=changelog-not-contains-unreleased' >> $GITHUB_OUTPUT; exit 1)
           git diff --name-only ${{ env.DESTINATION_COMMIT }} \
             | grep --perl-regexp 'changelog\.md' \
