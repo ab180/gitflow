@@ -187,6 +187,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: ${{ env.SOURCE_BRANCH }}
           token: ${{ env.TOKEN }}
 
       - name: Checkout commit
@@ -203,6 +204,15 @@ jobs:
         run: |
           cat ${{ env.CHANGELOG }} \
             | grep '^${{ env.VERSION_HEADER }}Unreleased$' \
+            || ( \
+              echo "$(printf '${{ env.VERSION_HEADER }}Unreleased\n\n' | cat - ${{ env.CHANGELOG }})" > ${{ env.CHANGELOG }}; \
+              git config user.name github-actions; \
+              git config user.email github-actions@github.com; \
+              git add ${{ env.CHANGELOG }}; \
+              git commit -m "document: add Unreleased to ${{ env.CHANGELOG }}"; \
+              git push; \
+            ) \
+            && (echo 'warning=changelog-not-modified' >> $GITHUB_OUTPUT; exit 0) \
             || (echo 'failure=changelog-not-contains-unreleased' >> $GITHUB_OUTPUT; exit 1)
           git diff --name-only ${{ env.DESTINATION_COMMIT }} \
             | grep --perl-regexp 'changelog\.md' \
@@ -246,13 +256,12 @@ jobs:
                 return `I recommend that you should modify ${{ env.CHANGELOG }}.`
               }
             })()
-            const response = await github.rest.issues.listComments({
+            const { data: comments } = await github.rest.issues.listComments({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-            });
-            const comments = response.map(json => json.body)
-            if (comments.some(comment => comment === message)) {
+            })
+            if (comments.some(comment => comment.body === message)) {
               return
             }
             github.rest.issues.createComment({
