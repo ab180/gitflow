@@ -1,3 +1,7 @@
+## 2.2.4
+
+- fix: solve issue that gitflow is failed if source branch is removed
+
 ## 2.2.3
 
 - fix: solve issue that CHANGELOG input is not used on everywhere
