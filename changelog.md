@@ -1,3 +1,7 @@
+## 2.3.0
+
+- feature: add dependabot to default feature branches
+
 ## 2.2.4
 
 - fix: solve issue that gitflow is failed if source branch is removed
