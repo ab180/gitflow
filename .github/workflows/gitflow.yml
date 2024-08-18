@@ -25,7 +25,7 @@ on:
       FEATURE_BRANCHES:
         description: 'Names of feature branch (seperator is " ")'
         type: string
-        default: 'feature refactor fix change update document test chore'
+        default: 'feature refactor fix change update document test chore dependabot'
         required: false
       RELEASE_BRANCHES:
         description: 'Names of release branch (seperator is " ")'

@@ -27,7 +27,7 @@ A implementation of workflows of GitHub Actions to support using gitflow on GitH
         # with:
         #   MAIN_BRANCH: ... # Default: 'main'
         #   DEVELOP_BRANCH: ... # Default: 'develop'
-        #   FEATURE_BRANCHES: ... # Default: 'feature refactor fix change update document test chore'
+        #   FEATURE_BRANCHES: ... # Default: 'feature refactor fix change update document test chore dependabot'
         #   RELEASE_BRANCHES: ... # Default: 'release hotfix'
         #   NORELEASE_BRANCHES: ... # Default: 'norelease'
         #   VERSION_EXPRESSION: ... # Default: '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*'
