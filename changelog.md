@@ -1,3 +1,7 @@
+## 2.3.1
+
+- fix: solve issue that auto-unreleased-commit feature is not working
+
 ## 2.3.0
 
 - feature: add dependabot to default feature branches
