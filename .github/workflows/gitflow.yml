@@ -190,15 +190,17 @@ jobs:
           ref: ${{ env.SOURCE_COMMIT }}
           token: ${{ env.TOKEN }}
 
-      - name: Checkout commit
+      - name: Checkout branch and commit
         run: |
+          git fetch origin ${{ env.SOURCE_BRANCH }} && git checkout ${{ env.SOURCE_BRANCH }} || :
           git fetch origin ${{ env.SOURCE_COMMIT }} || :
           git fetch origin ${{ env.DESTINATION_COMMIT }} || :
 
       - name: Check feature branch
         id: check-feature-branch
         if: |
-          github.event.pull_request.merged != true
+          github.event.pull_request.action != 'closed'
+          && github.event.pull_request.merged != true
           && steps.check-branch.outcome == 'success'
           && steps.check-branch.outputs.type == 'feature'
         run: |
@@ -275,7 +277,8 @@ jobs:
       - name: Check release branch
         id: check-release-branch
         if: |
-          github.event.pull_request.merged != true
+          github.event.pull_request.action != 'closed'
+          && github.event.pull_request.merged != true
           && steps.check-branch.outcome == 'success'
           && steps.check-branch.outputs.type == 'release'
         run: |
