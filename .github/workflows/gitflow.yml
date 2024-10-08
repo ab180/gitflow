@@ -214,7 +214,6 @@ jobs:
               git commit -m "document: add Unreleased to ${{ env.CHANGELOG }}"; \
               git push; \
             ) \
-            && (echo 'warning=changelog-not-modified' >> $GITHUB_OUTPUT; exit 0) \
             || (echo 'failure=changelog-not-contains-unreleased' >> $GITHUB_OUTPUT; exit 1)
           git diff --name-only ${{ env.DESTINATION_COMMIT }} \
             | grep --fixed-strings '${{ env.CHANGELOG }}' \
