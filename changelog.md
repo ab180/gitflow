@@ -1,3 +1,7 @@
+## 2.3.3
+
+- fix: solve issue that changelog is not parsed properly if changelog.md do not have last empty line
+
 ## 2.3.2
 
 - fix: solve issue that unexpected changelog-not-modified warning is printed
