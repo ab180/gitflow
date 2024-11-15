@@ -1,4 +1,4 @@
-## Unreleased
+## 2.3.3
 
 - fix: solve issue that changelog is not parsed properly if changelog.md do not have last empty line
 
